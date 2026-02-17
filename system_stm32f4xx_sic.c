@@ -62,35 +62,33 @@ void I2C1_Init() {
 	GPIOB_PUPDR |= (1<<16);
 
 	GPIOB_AFRH &= ~(0xFF<<0);
-	GPIOB_AFRH |= (1<<2);
 	GPIOB_AFRH |= (1<<6);
+	GPIOB_AFRH |= (1<<2);
 
 	RCC_APB1ENR |= (1<<21);
 
 	I2C1_CR1 |= (1<<15);
-
 	I2C1_CR1 &= ~(1<<15);
 
 	I2C1_CR2 |= (1<<4);
 
 	I2C1_OAR1 = (0x12<<1);
-
 	I2C1_OAR1 |= (1<<14);
 
 	I2C1_CR1 |= (1<<0);
 }
 
 void I2C1_Read(int n, char *str) {
-	I2C1_CR1 |= (1<<10);
+	//1st task ack enable
+   I2C1_CR1 |=(1<<10);
 
-	while (!(I2C1_SR1 & (1 << 1))) {}
+   //address matching wait
+   while(!(I2C1_SR1 &(1<<1))){}
+   (void) I2C1_SR2;//CLEAR ADD FLAG
 
-	(void)I2C1_SR2;
-
-	for (int i = 0; i < n; i++) {
-
-		while (!(I2C1_SR1 & (1 << 6))) {}
-		str[i] = I2C1_DR;
-	}
-	I2C1_CR1 &= ~(1<<10);
+   for(int i=0;i<n;i++){
+    while(!(I2C1_SR1 &(1<<6))){}
+    str[i]= I2C1_DR;
+   }
+   I2C1_CR1 &=~(1<<10);
 }
