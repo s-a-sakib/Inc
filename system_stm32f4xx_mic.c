@@ -44,58 +44,77 @@ int main(void) {
 
 void I2C1_Init() {
 
+	//bus enable for I2C
 	RCC_AHB1ENR |= (1<<1);
 
+	//mode selection
 	GPIOB_MODER |= (1<<19);
 	GPIOB_MODER &= ~(1<<18);
 	GPIOB_MODER |= (1<<17);
 	GPIOB_MODER &= ~(1<<16);
 
+	//open drain pin 8 and 9
 	GPIOB_OTYPER |= (1<<8);
 	GPIOB_OTYPER |= (1<<9);
 
+	//pull up for sda and scl
 	GPIOB_PUPDR &= ~(1<<19);
 	GPIOB_PUPDR |= (1<<18);
 	GPIOB_PUPDR &= ~(1<<17);
 	GPIOB_PUPDR |= (1<<16);
 
+	//declare as AF4
 	GPIOB_AFRH &= ~(0xFF<<0);
-	GPIOB_AFRH |= (1<<2);
 	GPIOB_AFRH |= (1<<6);
+	GPIOB_AFRH |= (1<<2);
 
+	//I2C module work
+	//bus enable
 	RCC_APB1ENR |= (1<<21);
 
+	//first i2c reset then set
 	I2C1_CR1 |= (1<<15);
-
 	I2C1_CR1 &= ~(1<<15);
 
+	//16mhz, 4no bit set
 	I2C1_CR2 |= (1<<4);
 
+	//output speed
 	I2C1_CCR = 80;
-
 	I2C1_TRISE = 17;
 
+	//peripheral i2c module enable
 	I2C1_CR1 |= (1<<0);
 }
 
 void I2C1_Send(char saddr, int n, char* str) {
 
+	// if the bus bust then wait
 	while(I2C1_SR2 & (1<<1)) {}
 
-	I2C1_CR1 |= (1<<8);             
+	//start if the bus is not busy
+	I2C1_CR1 |= (1<<8);
+	// if the master generated the start bit
 	while(!(I2C1_SR1 & (1<<0))) {}  
 
+	//start done now address frame with write bit(0)
 	I2C1_DR = (saddr<<1);
+
+	//address matching
 	while(!(I2C1_SR1 & (1<<1))) {}
 
+	//master ready for communication, so clear the address flag
 	(void)I2C1_SR2;
 
+	//check data reg empty then send
 	for(int i = 0; i < n; i++) {
-
 		while(!(I2C1_SR1 & (1<<7))) {}
 		I2C1_DR = *str++;
 	}
+
+	//last byte transfer finished
 	while(!(I2C1_SR1 & (1<<2))) {}
 	
+	// stop
 	I2C1_CR1 |= (1<<9);
 }
